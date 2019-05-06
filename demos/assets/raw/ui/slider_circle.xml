@@ -1,0 +1,6 @@
+<window >
+  <slider_circle x="c" y="100" w="100" h="120"  name="circle" line_width="6" counter_clock_wise="TRUE" start_angle="0" end_angle="180">
+    <label name="value" x="c" y="bottom:30" w="20%" h="30%" text="40"/>
+  </slider_circle>	
+
+</window>
