@@ -42,3 +42,4 @@ SConscript(SConscriptFiles)
 os.environ['BIN_DIR'] = BIN_DIR
 SConscript('src/SConscript')
 SConscript('demos/SConscript')
+SConscript('tests/SConscript')
