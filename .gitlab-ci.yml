@@ -1,0 +1,57 @@
+variables:
+  #此处对git的子模块进行递归更新
+  GIT_SUBMODULE_STRATEGY: recursive
+
+image:
+  name: docker.zhaoqi.info/awtk/ubuntu:awtk
+
+stages:
+  - build
+
+# 目前的MAC的环境缺失了 暂时不编译MAC上的测试
+# build_macos:
+#   stage: build
+#   script:
+#     - scons -j8
+#     - python ./scripts/update_res.py all
+#     - ./bin/runTest
+#   tags:
+#     - macos_awtk_env
+
+build_win:
+  stage: build
+  script:
+    - call %APP_ENV%\startup_app.bat
+    - cd awtk 
+    - scons -j4
+    - cd ..   
+    - python.exe scripts\update_res.py all
+    - scons -j4    
+    - .\bin\runTest.exe
+  tags:
+    - win_awtk_env
+
+# 后面将不在 ubuntu的实体机中编译，统一在docker环境中编译
+# build_ubuntu:
+#   stage: build
+#   script:
+#     - scons -j8
+#     - python ./scripts/update_res.py all
+#     - ./bin/runTest
+#   tags:
+#     - ubuntu_awtk_env
+
+build_docker:
+  stage: build
+  script:
+    - cd awtk && scons -j4 && cd  -
+    - python ./scripts/update_res.py all
+    - scons -j4
+    - ./bin/runTest
+  tags:
+    - docker
+  artifacts:
+    name: artifacts
+    expire_in: 1 day
+    paths:
+     - bin
