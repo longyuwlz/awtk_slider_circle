@@ -1,0 +1,10 @@
+*.o
+inc/
+*.obj
+*.bin
+*.res
+*.data
+*.exe
+bin/*
+.sconsign.dblite
+*.pyc

@@ -1,0 +1,15 @@
+import os
+
+env=DefaultEnvironment().Clone();
+BIN_DIR=os.environ['BIN_DIR'];
+LIB_DIR=os.environ['LIB_DIR'];
+
+env.Library(os.path.join(LIB_DIR, 'assets'), ['assets.c'])
+
+env['LIBS'] = ['assets', 'awtk_slider_circle'] + env['LIBS']
+env['LINKFLAGS'] = env['OS_SUBSYSTEM_WINDOWS'] + env['LINKFLAGS']
+
+env.Program(os.path.join(BIN_DIR, 'demo_slider_circle'), ['demo_main.c', 'slider_circle_test.c'])
+env.Program(os.path.join(BIN_DIR, 'preview_ui'), ['preview_ui.c'])
+
+
