@@ -44,7 +44,7 @@ BEGIN_C_DECLS
  *
  * > 完整示例请参考：
  * [slider circle
- * demo](http://git.zhaoqi.info:9998/awtk/awtk-slider-circle/blob/master/demos/slider_circle_test.c)
+ * demo](https://github.com/longyuwlz/awtk_slider_circle/tree/master/demos/slider_circle_test.c)
  *
  * 可用通过style来设置控件的显示风格，如图片和颜色等等。如：
  *
