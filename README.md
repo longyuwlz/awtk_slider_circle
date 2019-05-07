@@ -53,5 +53,5 @@ scons -j4
 
 ## 相关文档
 
-* [awtk 扩展组件－以圆形滑块为例](http://git.zhaoqi.info:9998/awtk/awtk-slider-circle/blob/master/docs/awtk-slider-circle.md)
-* [圆形滑块 manual 文档](http://git.zhaoqi.info:9998/awtk/awtk-slider-circle/blob/master/docs/slider_circle_t.md)
+* [awtk 扩展组件－以圆形滑块为例](docs/awtk-slider-circle.md)
+* [圆形滑块 manual 文档](docs/slider_circle_t.md)
