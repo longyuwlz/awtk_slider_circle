@@ -43,13 +43,13 @@ ret_t create_slider_circle(widget_t* win, bool_t wise, const char* name) {
     widget_t* label = label_create(slider_circle, 0, 0, 0, 0);
     
     if (wise) {
-        widget_set_self_layout_params(slider_circle, "c", "5%", "100%", "30%");
+        widget_set_self_layout_params(slider_circle, "5%", "5%", "100%", "30%");
         slider_circle_set_start_angle(slider_circle, 200);
         slider_circle_set_end_angle(slider_circle, 340);
     } else {
-        widget_set_self_layout_params(slider_circle, "c", "20%", "100%", "30%");
-        slider_circle_set_start_angle(slider_circle, 20);
-        slider_circle_set_end_angle(slider_circle, 160);
+        widget_set_self_layout_params(slider_circle, "5%", "40%", "100%", "30%");
+        slider_circle_set_start_angle(slider_circle, 145);
+        slider_circle_set_end_angle(slider_circle, 395);
     }
 
     widget_layout(slider_circle);

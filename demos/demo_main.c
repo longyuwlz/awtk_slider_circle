@@ -90,6 +90,7 @@ int main(int argc, char* argv[]) {
   }
 #endif /*WITH_LCD_PORTRAIT*/
 
+  tk_ext_widgets_init();
   slider_circle_register();
 
   log_debug("Build at: %s %s\n", __DATE__, __TIME__);
