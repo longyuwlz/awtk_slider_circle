@@ -1,16 +1,15 @@
 <window >
   <slide_view x="0" y="0" w="100%" h="100%">
     <view w="100%" h="100%">
-      <slider_circle x="c" y="100" w="100" h="120"  name="circle" line_width="6" counter_clock_wise="TRUE" start_angle="0" end_angle="180">
+      <slider_circle x="c" y="100" w="100" h="120"  name="circle" line_width="8" counter_clock_wise="TRUE" start_angle="0" end_angle="180">
         <label name="value" x="c" y="bottom:30" w="20%" h="30%" text="40"/>
       </slider_circle>	
     </view>
 
     <view w="100%" h="100%">
-      <slider_circle x="c" y="100" w="100" h="120"  name="circle" line_width="6" counter_clock_wise="FALSE" start_angle="165" end_angle="375">
+      <slider_circle x="c" y="100" w="100" h="120"  name="circle" line_width="8" counter_clock_wise="FALSE" start_angle="0" end_angle="360">
         <label name="value" x="c" y="bottom:30" w="20%" h="30%" text="40"/>
       </slider_circle>
-      <slider name="test" x="c:40" y="200" w="200" h="50" min="0" max="100" step="1"/>
     </view>
   </slide_view>
 </window>
