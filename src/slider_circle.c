@@ -41,7 +41,7 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
     /* calculate coordinate */
     r->x = slider_circle->cx + slider_circle->rad * sinf(angle);
     r->y = slider_circle->cy - slider_circle->rad * cosf(angle);
-
+    
     image_name = style_get_str(style, STYLE_ID_ICON, NULL);
 
     if (image_name && image_manager_get_bitmap(image_manager(), image_name,
@@ -68,11 +68,11 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
     color_t trans = color_init(0, 0, 0, 0);
     const char* image_name = NULL;
     style_t* style = widget->astyle;
-    vgcanvas_t* vg = canvas_get_vgcanvas(c);
+    vgcanvas_t* vg = canvas_get_vgcanvas(c);    
     color = style_get_color(style, STYLE_ID_BORDER_COLOR, trans);
 
     slider_circle_get_dragger_rect(widget, &r);
-
+    
     if (color.rgba.a) {
         xy_t x = c->ox;
         xy_t y = c->oy;
@@ -83,11 +83,12 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
         canvas_translate(c, x, y);
     } else {
         image_name = style_get_str(style, STYLE_ID_ICON, NULL);
-
+        
         if (image_name && image_manager_get_bitmap(image_manager(), image_name,
                                                    &img) == RET_OK)  {
             vgcanvas_draw_image(vg, &img, 0, 0, img.w, img.h, r.x, r.y, img.w, img.h);
         }
+        
     }
     return RET_OK;
 }
@@ -103,21 +104,21 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
     slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
 
     vgcanvas_save(vg);
+    vgcanvas_translate(vg, c->ox, c->oy);
     vgcanvas_set_stroke_color(vg, color);
     vgcanvas_set_line_width(vg, slider_circle->line_width);
     vgcanvas_set_line_cap(vg, "round");
     vgcanvas_begin_path(vg);
-
-    vgcanvas_arc(vg, slider_circle->cx, slider_circle->cy,
-                 slider_circle->rad, start_angle, end_angle,
-                 FALSE);
+    
+    vgcanvas_arc(vg, slider_circle->cx - c->ox, slider_circle->cy - c->oy,
+                 slider_circle->rad, start_angle, end_angle, FALSE);
 
     if (img) {
         vgcanvas_paint(vg, TRUE, img);
     } else {
         vgcanvas_stroke(vg);
     }
-
+     
     vgcanvas_restore(vg);
 
     return RET_OK;
@@ -143,7 +144,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
     if (slider_circle->cx != (widget->w / 2 + c->ox)) {
         xy_t cx = widget->w / 2;
         xy_t cy = widget->h / 2;
-
+        
         slider_circle->cx = cx + c->ox;
         slider_circle->cy = cy + c->oy;
         slider_circle->rad = tk_min(cx, cy) - slider_circle->line_width;
@@ -154,7 +155,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
         int32_t start_angle = slider_circle->start_angle;
         int32_t end_angle = slider_circle->end_angle;
         color_t bg_color = style_get_color(style, STYLE_ID_BG_COLOR, trans);
-        float_t angle = (float)(slider_circle->value * (end_angle - start_angle)) /
+        float_t angle = (float)(slider_circle->value * (end_angle - start_angle)) / 
             (slider_circle->max - slider_circle->min);
 
         if (bg_color.rgba.a) {
@@ -163,13 +164,13 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
             } else {
                 start_angle = angle + slider_circle->start_angle;
             }
-
+            
             slider_circle_paint_arc(widget, c, bg_color,
                                     TK_D2R(start_angle),
                                     TK_D2R(end_angle), NULL);
         }
-
-        if (fg_color.rgba.a) {
+        
+        if (fg_color.rgba.a || has_image) {
             if (ccw) {
                 end_angle = slider_circle->end_angle;
                 start_angle = end_angle - angle;
@@ -183,6 +184,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
                                     TK_D2R(end_angle), has_image ? &img : NULL);
 
         }
+        
         slider_circle_paint_dragger(widget, c);
     }
 
@@ -320,7 +322,7 @@ static ret_t slider_circle_set_prop(widget_t* widget, const char* name, const va
         return slider_circle_set_end_angle(widget, value_int(v));
     }else if (tk_str_eq(name, WIDGET_PROP_STEP)) {
         return slider_circle_set_step(widget, value_int(v));
-    }
+    } 
 
     return RET_NOT_FOUND;
 }
@@ -331,7 +333,7 @@ static float_t calculate_real_angle(widget_t* widget, point_t p, float_t angle)
     int cx = slider_circle->cx;
     int cy = slider_circle->cy;
     bool_t not_in_range = FALSE;
-
+    
     if (p.x >= cx && p.y < cy) {
         angle = angle + 270;
     } else if (p.x > cx && p.y >= cy) {
@@ -415,7 +417,7 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
         ret = slider_circle->dragging ? RET_STOP : RET_OK;
         break;
     }
-    case EVT_POINTER_DOWN_ABORT:
+    case EVT_POINTER_DOWN_ABORT: 
         slider_circle_pointer_up_cleanup(widget);
         break;
     case EVT_POINTER_MOVE: {
@@ -434,7 +436,7 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
         angle = fabsf(asinf((float)(p.x - slider_circle->cx) / dist));
 
         angle = calculate_real_angle(widget, p, TK_R2D(angle));
-
+        
         if (slider_circle->dragging) {
             float fvalue = 0;
             uint16_t range = slider_circle->max - slider_circle->min;
@@ -444,20 +446,20 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
             } else {
                 angle = angle - slider_circle->start_angle;
             }
-
+            
             int16_t angle_range = slider_circle->end_angle -
                 slider_circle->start_angle;
 
             fvalue = angle / (angle_range ? angle_range : 1);
-
+            
             if (fvalue > 1) {
                 fvalue = 1;
             } else if (fvalue < 0) {
                 fvalue = 0;
             }
-
+            
             value = fvalue * (slider_circle->max - slider_circle->min) + slider_circle->min;
-
+            
             if (abs(value - slider_circle->value) * 2 > range) {
                 ret = RET_STOP;
                 break;
@@ -465,10 +467,10 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
 
             slider_circle_set_value_internal(widget, value, EVT_VALUE_CHANGING, FALSE);
         }
-
+        
         break;
     }
-    case EVT_POINTER_UP:
+    case EVT_POINTER_UP: 
         if (slider_circle->dragging) {
             slider_circle_set_value_internal(widget, slider_circle->value, EVT_VALUE_CHANGED, TRUE);
         }
@@ -481,7 +483,7 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
     case EVT_POINTER_ENTER:
         widget_set_state(widget, slider_circle->dragging ? WIDGET_STATE_PRESSED : WIDGET_STATE_OVER);
         break;
-    default:
+    default: 
         ret = RET_OK;
         break;
     }
@@ -520,12 +522,12 @@ widget_t* slider_circle_create(widget_t* parent, xy_t x, xy_t y, wh_t w, wh_t h)
 
     slider_circle->max = 100;
     slider_circle->min = 0;
-    slider_circle->line_width = 6;
+    slider_circle->line_width = 8;
     slider_circle->start_angle = 0;
     slider_circle->end_angle = 180;
     slider_circle->step = 1;
     slider_circle->counter_clock_wise = FALSE;
-
+    
     return widget;
 }
 
