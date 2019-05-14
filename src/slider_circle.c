@@ -26,8 +26,9 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
     style_t* style = widget->astyle;
     slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
     float_t angle_range = slider_circle->end_angle - slider_circle->start_angle;
+    uint16_t value_range = slider_circle->max - slider_circle->min;
     float_t angle = (angle_range * slider_circle->value) /
-        (slider_circle->max - slider_circle->min);
+        (value_range ? value_range:1);
 
     if (slider_circle->counter_clock_wise) {
         angle = angle_range - angle;
@@ -40,7 +41,7 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
     /* calculate coordinate */
     r->x = slider_circle->cx + slider_circle->rad * sinf(angle);
     r->y = slider_circle->cy - slider_circle->rad * cosf(angle);
-    
+
     image_name = style_get_str(style, STYLE_ID_ICON, NULL);
 
     if (image_name && image_manager_get_bitmap(image_manager(), image_name,
@@ -67,11 +68,11 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
     color_t trans = color_init(0, 0, 0, 0);
     const char* image_name = NULL;
     style_t* style = widget->astyle;
-    vgcanvas_t* vg = canvas_get_vgcanvas(c);    
+    vgcanvas_t* vg = canvas_get_vgcanvas(c);
     color = style_get_color(style, STYLE_ID_BORDER_COLOR, trans);
 
     slider_circle_get_dragger_rect(widget, &r);
-    
+
     if (color.rgba.a) {
         xy_t x = c->ox;
         xy_t y = c->oy;
@@ -82,12 +83,11 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
         canvas_translate(c, x, y);
     } else {
         image_name = style_get_str(style, STYLE_ID_ICON, NULL);
-        
+
         if (image_name && image_manager_get_bitmap(image_manager(), image_name,
                                                    &img) == RET_OK)  {
             vgcanvas_draw_image(vg, &img, 0, 0, img.w, img.h, r.x, r.y, img.w, img.h);
         }
-        
     }
     return RET_OK;
 }
@@ -107,7 +107,7 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
     vgcanvas_set_line_width(vg, slider_circle->line_width);
     vgcanvas_set_line_cap(vg, "round");
     vgcanvas_begin_path(vg);
-    
+
     vgcanvas_arc(vg, slider_circle->cx, slider_circle->cy,
                  slider_circle->rad, start_angle, end_angle,
                  FALSE);
@@ -117,7 +117,7 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
     } else {
         vgcanvas_stroke(vg);
     }
-     
+
     vgcanvas_restore(vg);
 
     return RET_OK;
@@ -143,7 +143,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
     if (slider_circle->cx != (widget->w / 2 + c->ox)) {
         xy_t cx = widget->w / 2;
         xy_t cy = widget->h / 2;
-        
+
         slider_circle->cx = cx + c->ox;
         slider_circle->cy = cy + c->oy;
         slider_circle->rad = tk_min(cx, cy) - slider_circle->line_width;
@@ -154,7 +154,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
         int32_t start_angle = slider_circle->start_angle;
         int32_t end_angle = slider_circle->end_angle;
         color_t bg_color = style_get_color(style, STYLE_ID_BG_COLOR, trans);
-        float_t angle = (float)(slider_circle->value * (end_angle - start_angle)) / 
+        float_t angle = (float)(slider_circle->value * (end_angle - start_angle)) /
             (slider_circle->max - slider_circle->min);
 
         if (bg_color.rgba.a) {
@@ -163,12 +163,12 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
             } else {
                 start_angle = angle + slider_circle->start_angle;
             }
-            
+
             slider_circle_paint_arc(widget, c, bg_color,
                                     TK_D2R(start_angle),
                                     TK_D2R(end_angle), NULL);
         }
-        
+
         if (fg_color.rgba.a) {
             if (ccw) {
                 end_angle = slider_circle->end_angle;
@@ -177,13 +177,12 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
                 start_angle = slider_circle->start_angle;
                 end_angle = slider_circle->start_angle + angle;
             }
-            
+
             slider_circle_paint_arc(widget, c, fg_color,
                                     TK_D2R(start_angle),
                                     TK_D2R(end_angle), has_image ? &img : NULL);
 
         }
-        
         slider_circle_paint_dragger(widget, c);
     }
 
@@ -321,7 +320,7 @@ static ret_t slider_circle_set_prop(widget_t* widget, const char* name, const va
         return slider_circle_set_end_angle(widget, value_int(v));
     }else if (tk_str_eq(name, WIDGET_PROP_STEP)) {
         return slider_circle_set_step(widget, value_int(v));
-    } 
+    }
 
     return RET_NOT_FOUND;
 }
@@ -329,30 +328,27 @@ static ret_t slider_circle_set_prop(widget_t* widget, const char* name, const va
 static float_t calculate_real_angle(widget_t* widget, point_t p, float_t angle)
 {
     slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
-    int angle_range = slider_circle->end_angle - slider_circle->start_angle;
-    
-    if (p.x >= slider_circle->cx &&
-        p.y > slider_circle->cy) {
-        if (slider_circle->end_angle == 360 && angle_range != 360) {
-            angle = 360 + 90;
-        } else {
-            angle = 180 - angle;
-        }
-    } else if (p.x <= slider_circle->cx &&
-               p.y > slider_circle->cy) {
-        angle = 180 + angle;
-    } else if (p.x < slider_circle->cx &&
-               p.y <= slider_circle->cy) {
-        angle = 360 - angle;
-    } else if (p.x >= slider_circle->cx &&
-               p.y <= slider_circle->cy) {
-        angle = 360 + angle;
+    int cx = slider_circle->cx;
+    int cy = slider_circle->cy;
+    bool_t not_in_range = FALSE;
+
+    if (p.x >= cx && p.y < cy) {
+        angle = angle + 270;
+    } else if (p.x > cx && p.y >= cy) {
+        angle = 90 - angle;
+    } else if (p.x <= cx && p.y > cy) {
+        angle = angle + 90;
+    } else if (p.x < cx && p.y <= cy) {
+        angle = 270 - angle;
     }
 
-    if ((int)angle > 360 && slider_circle->end_angle <= 270) {
-        angle = 0;
+    not_in_range  = angle < slider_circle->start_angle ||
+        angle > slider_circle->end_angle;
+
+    if (not_in_range && slider_circle->end_angle > 360) {
+        angle += 360;
     }
-    
+
     return angle;
 }
 
@@ -383,11 +379,26 @@ ret_t slider_circle_set_value_internal(widget_t* widget, uint16_t value, event_t
     return RET_OK;
 }
 
+static ret_t slider_circle_pointer_up_cleanup(widget_t* widget) {
+    slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
+    return_value_if_fail(widget != NULL && slider_circle != NULL, RET_BAD_PARAMS);
+
+    slider_circle->dragging = FALSE;
+    widget_ungrab(widget->parent, widget);
+    widget_set_state(widget, WIDGET_STATE_NORMAL);
+    widget_invalidate(widget, NULL);
+
+  return RET_OK;
+}
+
 static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
     rect_t r;
+    ret_t ret = RET_OK;
     uint16_t type = e->type;
     slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
+    return_value_if_fail(widget != NULL && slider_circle != NULL, RET_BAD_PARAMS);
 
+    ret = slider_circle->dragging ? RET_STOP : RET_OK;
     switch (type) {
     case EVT_POINTER_DOWN: {
         pointer_event_t* evt = (pointer_event_t*)e;
@@ -401,8 +412,12 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
             widget_grab(widget->parent, widget);
             widget_invalidate(widget, NULL);
         }
+        ret = slider_circle->dragging ? RET_STOP : RET_OK;
         break;
     }
+    case EVT_POINTER_DOWN_ABORT:
+        slider_circle_pointer_up_cleanup(widget);
+        break;
     case EVT_POINTER_MOVE: {
         pointer_event_t* evt = (pointer_event_t*)e;
         point_t p = {evt->x, evt->y};
@@ -410,53 +425,56 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
         float_t angle;
         float_t dist = sqrtf(powf(p.x - slider_circle->cx, 2) + powf(p.y -
             slider_circle->cy, 2));
-        
-        if ((int)dist <= slider_circle->line_width) {
-            return RET_FAIL;
+
+        if (dist - slider_circle->line_width <= 0.001) {
+            ret = RET_STOP;
+            break;
         }
 
         angle = fabsf(asinf((float)(p.x - slider_circle->cx) / dist));
 
         angle = calculate_real_angle(widget, p, TK_R2D(angle));
-        
+
         if (slider_circle->dragging) {
             float fvalue = 0;
-            uint16_t range = (slider_circle->max - slider_circle->min) / 2;
+            uint16_t range = slider_circle->max - slider_circle->min;
+
             if (slider_circle->counter_clock_wise) {
-                angle = slider_circle->end_angle + 90 - angle;
+                angle = slider_circle->end_angle - angle;
             } else {
-                angle = angle - 90 - slider_circle->start_angle;
+                angle = angle - slider_circle->start_angle;
             }
-            
-            fvalue = angle / (slider_circle->end_angle -
-                              slider_circle->start_angle);
+
+            int16_t angle_range = slider_circle->end_angle -
+                slider_circle->start_angle;
+
+            fvalue = angle / (angle_range ? angle_range : 1);
+
             if (fvalue > 1) {
                 fvalue = 1;
             } else if (fvalue < 0) {
                 fvalue = 0;
             }
-            
+
             value = fvalue * (slider_circle->max - slider_circle->min) + slider_circle->min;
-            
-            if (abs(value - slider_circle->value) > range) {
-                return RET_FAIL;
+
+            if (abs(value - slider_circle->value) * 2 > range) {
+                ret = RET_STOP;
+                break;
             }
 
             slider_circle_set_value_internal(widget, value, EVT_VALUE_CHANGING, FALSE);
         }
-        
+
         break;
     }
-    case EVT_POINTER_UP: {
+    case EVT_POINTER_UP:
         if (slider_circle->dragging) {
-            slider_circle->dragging = FALSE;
-            widget_ungrab(widget->parent, widget);
             slider_circle_set_value_internal(widget, slider_circle->value, EVT_VALUE_CHANGED, TRUE);
         }
-        widget_set_state(widget, WIDGET_STATE_NORMAL);
-        widget_invalidate(widget, NULL);
+
+        slider_circle_pointer_up_cleanup(widget);
         break;
-    }
     case EVT_POINTER_LEAVE:
         widget_set_state(widget, slider_circle->dragging ? WIDGET_STATE_PRESSED : WIDGET_STATE_NORMAL);
         break;
@@ -464,10 +482,12 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
         widget_set_state(widget, slider_circle->dragging ? WIDGET_STATE_PRESSED : WIDGET_STATE_OVER);
         break;
     default:
+        ret = RET_OK;
         break;
     }
-  
-    return RET_OK;
+
+    log_debug("dragging is %d\n", slider_circle->dragging);
+    return ret;
 }
 
 static const char* s_slider_circle_properties[] = {WIDGET_PROP_VALUE,
@@ -505,7 +525,7 @@ widget_t* slider_circle_create(widget_t* parent, xy_t x, xy_t y, wh_t w, wh_t h)
     slider_circle->end_angle = 180;
     slider_circle->step = 1;
     slider_circle->counter_clock_wise = FALSE;
-    
+
     return widget;
 }
 
