@@ -86,10 +86,16 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
         
         if (image_name && image_manager_get_bitmap(image_manager(), image_name,
                                                    &img) == RET_OK)  {
-            vgcanvas_draw_image(vg, &img, 0, 0, img.w, img.h, r.x, r.y, img.w, img.h);
+            xy_t x = c->ox;
+            xy_t y = c->oy;
+            
+            canvas_untranslate(c, c->ox, c->oy);
+            canvas_draw_icon_in_rect(c, &img, &r);
+            canvas_translate(c, x, y);
         }
         
     }
+    
     return RET_OK;
 }
 
@@ -99,28 +105,38 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
                                      float start_angle,
                                      float end_angle,
                                      bitmap_t* img)
-{
-    vgcanvas_t* vg = canvas_get_vgcanvas(c);
-    slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
+{    
+    if (color.rgba.a) {
+        vgcanvas_t* vg = canvas_get_vgcanvas(c);
+        slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
 
-    vgcanvas_save(vg);
-    vgcanvas_translate(vg, c->ox, c->oy);
-    vgcanvas_set_stroke_color(vg, color);
-    vgcanvas_set_line_width(vg, slider_circle->line_width);
-    vgcanvas_set_line_cap(vg, "round");
-    vgcanvas_begin_path(vg);
-    
-    vgcanvas_arc(vg, slider_circle->cx - c->ox, slider_circle->cy - c->oy,
+        vgcanvas_save(vg);
+        vgcanvas_translate(vg, c->ox, c->oy);
+        vgcanvas_set_stroke_color(vg, color);
+        vgcanvas_set_line_width(vg, slider_circle->line_width);
+        vgcanvas_set_line_cap(vg, "round");
+        vgcanvas_begin_path(vg);
+        
+        vgcanvas_arc(vg, slider_circle->cx - c->ox, slider_circle->cy - c->oy,
                  slider_circle->rad, start_angle, end_angle, FALSE);
-
-    if (img) {
-        vgcanvas_paint(vg, TRUE, img);
-    } else {
+    
         vgcanvas_stroke(vg);
+        
+        vgcanvas_restore(vg);
     }
-     
-    vgcanvas_restore(vg);
-
+    
+    if (img) {
+        rect_t r;
+        
+        r = rect_init(widget->x, widget->y, widget->w, widget->h);
+        xy_t x = c->ox;
+        xy_t y = c->oy;
+        
+        canvas_untranslate(c, c->ox, c->oy);
+        canvas_draw_icon_in_rect(c, img, &r);
+        canvas_translate(c, x, y);        
+    }
+    
     return RET_OK;
 }
 
@@ -158,19 +174,21 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
         float_t angle = (float)(slider_circle->value * (end_angle - start_angle)) / 
             (slider_circle->max - slider_circle->min);
 
-        if (bg_color.rgba.a) {
+        
+        if (fg_color.rgba.a || has_image) {
             if (ccw) {
                 end_angle = slider_circle->end_angle - angle;
             } else {
                 start_angle = angle + slider_circle->start_angle;
             }
             
-            slider_circle_paint_arc(widget, c, bg_color,
+            slider_circle_paint_arc(widget, c, fg_color,
                                     TK_D2R(start_angle),
-                                    TK_D2R(end_angle), NULL);
+                                    TK_D2R(end_angle), has_image ? &img : NULL);
+            
         }
         
-        if (fg_color.rgba.a || has_image) {
+        if (bg_color.rgba.a) {
             if (ccw) {
                 end_angle = slider_circle->end_angle;
                 start_angle = end_angle - angle;
@@ -178,16 +196,15 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
                 start_angle = slider_circle->start_angle;
                 end_angle = slider_circle->start_angle + angle;
             }
-
-            slider_circle_paint_arc(widget, c, fg_color,
+            slider_circle_paint_arc(widget, c, bg_color,
                                     TK_D2R(start_angle),
-                                    TK_D2R(end_angle), has_image ? &img : NULL);
-
+                                    TK_D2R(end_angle), NULL);
+            
         }
         
         slider_circle_paint_dragger(widget, c);
     }
-
+    
     return RET_OK;
 }
 
