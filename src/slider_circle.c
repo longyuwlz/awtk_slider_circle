@@ -68,7 +68,6 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
     color_t trans = color_init(0, 0, 0, 0);
     const char* image_name = NULL;
     style_t* style = widget->astyle;
-    vgcanvas_t* vg = canvas_get_vgcanvas(c);    
     color = style_get_color(style, STYLE_ID_BORDER_COLOR, trans);
 
     slider_circle_get_dragger_rect(widget, &r);
@@ -88,12 +87,10 @@ static ret_t slider_circle_paint_dragger(widget_t* widget, canvas_t* c)
                                                    &img) == RET_OK)  {
             xy_t x = c->ox;
             xy_t y = c->oy;
-            
             canvas_untranslate(c, c->ox, c->oy);
             canvas_draw_icon_in_rect(c, &img, &r);
             canvas_translate(c, x, y);
         }
-        
     }
     
     return RET_OK;
@@ -121,20 +118,12 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
                  slider_circle->rad, start_angle, end_angle, FALSE);
     
         vgcanvas_stroke(vg);
-        
         vgcanvas_restore(vg);
     }
     
     if (img) {
-        rect_t r;
-        
-        r = rect_init(widget->x, widget->y, widget->w, widget->h);
-        xy_t x = c->ox;
-        xy_t y = c->oy;
-        
-        canvas_untranslate(c, c->ox, c->oy);
+        rect_t r =  rect_init(widget->x, widget->y, widget->w, widget->h);
         canvas_draw_icon_in_rect(c, img, &r);
-        canvas_translate(c, x, y);        
     }
     
     return RET_OK;
@@ -147,7 +136,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
     color_t trans = color_init(0, 0, 0, 0);
     slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
     color_t fg_color = style_get_color(style, STYLE_ID_FG_COLOR, trans);
-    const char* image_name = style_get_str(style, STYLE_ID_FG_IMAGE, NULL);
+    const char* image_name = style_get_str(style, STYLE_ID_BG_IMAGE, NULL);
     bool_t has_image = image_name && widget_load_image(widget, image_name, &img)
         == RET_OK;
 
@@ -175,20 +164,20 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
             (slider_circle->max - slider_circle->min);
 
         
-        if (fg_color.rgba.a || has_image) {
+        if (bg_color.rgba.a || has_image) {
             if (ccw) {
                 end_angle = slider_circle->end_angle - angle;
             } else {
                 start_angle = angle + slider_circle->start_angle;
             }
             
-            slider_circle_paint_arc(widget, c, fg_color,
+            slider_circle_paint_arc(widget, c, bg_color,
                                     TK_D2R(start_angle),
                                     TK_D2R(end_angle), has_image ? &img : NULL);
             
         }
         
-        if (bg_color.rgba.a) {
+        if (fg_color.rgba.a) {
             if (ccw) {
                 end_angle = slider_circle->end_angle;
                 start_angle = end_angle - angle;
@@ -196,7 +185,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
                 start_angle = slider_circle->start_angle;
                 end_angle = slider_circle->start_angle + angle;
             }
-            slider_circle_paint_arc(widget, c, bg_color,
+            slider_circle_paint_arc(widget, c, fg_color,
                                     TK_D2R(start_angle),
                                     TK_D2R(end_angle), NULL);
             
@@ -505,7 +494,6 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
         break;
     }
 
-    log_debug("dragging is %d\n", slider_circle->dragging);
     return ret;
 }
 

@@ -490,11 +490,11 @@
 </progress_circle>
 
 <slider_circle>
-  <style name="default" icon="slider_drag" fg_image="progress_circle">
-    <normal  bg_color="black"/>
-	<pressed bg_color="black"/>
-    <pressed bg_color="black"/>
-    <over    bg_color="black"/>
+  <style name="default" icon="slider_drag" bg_color="green">
+    <normal  fg_color="black"/>
+	<pressed fg_color="black"/>
+    <pressed fg_color="black"/>
+    <over    fg_color="black"/>
   </style>
   <style name="image" icon="test">
     <normal text_color="gold" icon="test" fg_image="progress_circle" />
