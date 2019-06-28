@@ -48,8 +48,8 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
                                                &img) == RET_OK)  {
         r->x -= img.w / 2;
         r->y -= img.h / 2;
-        r->h = img.w;
-        r->w = img.h;
+        r->h = img.h;
+        r->w = img.w;
     } else {
         r->w = slider_circle->line_width * 3.5;
         r->h = r->w;
@@ -122,8 +122,8 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
     }
     
     if (img) {
-        rect_t r =  rect_init(widget->x, widget->y, widget->w, widget->h);
-        canvas_draw_icon_in_rect(c, img, &r);
+        rect_t src = rect_init(0, 0, img->h, img->w);
+        canvas_draw_image(c, img, &src, &src);
     }
     
     return RET_OK;
@@ -152,7 +152,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
         
         slider_circle->cx = cx + c->ox;
         slider_circle->cy = cy + c->oy;
-        slider_circle->rad = tk_min(cx, cy) - slider_circle->line_width;
+        slider_circle->rad = tk_min(cx, cy) - slider_circle->line_width / 2;
     }
 
     if (vg != NULL) {
