@@ -119,10 +119,10 @@ typedef struct _slider_circle_t {
     float_t rad;
 
     /* private */
-    int32_t cx;
+    float_t cx;
 
     /* private */
-    int32_t cy;
+    float_t cy;
 
     /**
      * @property {bool_t} counter_clock_wise

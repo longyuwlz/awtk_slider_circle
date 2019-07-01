@@ -109,15 +109,14 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
         slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
 
         vgcanvas_save(vg);
-        vgcanvas_translate(vg, c->ox, c->oy);
         vgcanvas_set_stroke_color(vg, color);
         vgcanvas_set_line_width(vg, slider_circle->line_width);
         vgcanvas_set_line_cap(vg, "round");
         vgcanvas_begin_path(vg);
-
-        vgcanvas_arc(vg, slider_circle->cx - c->ox, slider_circle->cy - c->oy,
-                 slider_circle->rad, start_angle, end_angle, FALSE);
-    
+        
+        vgcanvas_arc(vg, slider_circle->cx, slider_circle->cy,
+                     slider_circle->rad, start_angle, end_angle, FALSE);
+        
         vgcanvas_stroke(vg);
         vgcanvas_restore(vg);
     }
@@ -132,6 +131,7 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
 
 static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
     bitmap_t img;
+    int32_t temp = tk_min(widget->w, widget->h);
     style_t* style = widget->astyle;
     vgcanvas_t* vg = canvas_get_vgcanvas(c);
     color_t trans = color_init(0, 0, 0, 0);
@@ -146,16 +146,11 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
     } else if (slider_circle->value < slider_circle->min) {
         slider_circle->value = slider_circle->min;
     }
-
-    if (slider_circle->cx != (widget->w / 2 + c->ox)) {
-        xy_t cx = widget->w / 2;
-        xy_t cy = widget->h / 2;
-        
-        slider_circle->cx = cx + c->ox;
-        slider_circle->cy = cy + c->oy;
-        slider_circle->rad = tk_min(cx, cy);
-    }
-
+    
+    slider_circle->cx = widget->w / 2.0 + c->ox;
+    slider_circle->cy = widget->h / 2.0 + c->oy;
+    slider_circle->rad = ((float_t)temp) / 2.0 - slider_circle->line_width / 2;
+    
     if (vg != NULL) {
         bool_t ccw = slider_circle->counter_clock_wise;
         int32_t start_angle = slider_circle->start_angle;
