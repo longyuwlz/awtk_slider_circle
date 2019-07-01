@@ -41,7 +41,7 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
     /* calculate coordinate */
     r->x = slider_circle->cx + slider_circle->rad * sinf(angle);
     r->y = slider_circle->cy - slider_circle->rad * cosf(angle);
-    
+
     image_name = style_get_str(style, STYLE_ID_ICON, NULL);
 
     if (image_name && image_manager_get_bitmap(image_manager(), image_name,
