@@ -29,6 +29,7 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
     uint16_t value_range = slider_circle->max - slider_circle->min;
     float_t angle = (angle_range * slider_circle->value) /
         (value_range ? value_range:1);
+    uint16_t dragger_rad = slider_circle->rad;
 
     if (slider_circle->counter_clock_wise) {
         angle = angle_range - angle;
@@ -39,8 +40,8 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
     angle = TK_D2R(angle + 90);
 
     /* calculate coordinate */
-    r->x = slider_circle->cx + slider_circle->rad * sinf(angle);
-    r->y = slider_circle->cy - slider_circle->rad * cosf(angle);
+    r->x = slider_circle->cx + dragger_rad * sinf(angle);
+    r->y = slider_circle->cy - dragger_rad * cosf(angle);
 
     image_name = style_get_str(style, STYLE_ID_ICON, NULL);
 
@@ -51,7 +52,7 @@ static ret_t slider_circle_get_dragger_rect(widget_t* widget, rect_t* r)
         r->h = img.h;
         r->w = img.w;
     } else {
-        r->w = slider_circle->line_width * 3.5;
+        r->w = slider_circle->line_width * 2;
         r->h = r->w;
         r->x -= slider_circle->line_width;
         r->y -= slider_circle->line_width;
@@ -113,7 +114,7 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
         vgcanvas_set_line_width(vg, slider_circle->line_width);
         vgcanvas_set_line_cap(vg, "round");
         vgcanvas_begin_path(vg);
-        
+
         vgcanvas_arc(vg, slider_circle->cx - c->ox, slider_circle->cy - c->oy,
                  slider_circle->rad, start_angle, end_angle, FALSE);
     
@@ -122,7 +123,7 @@ static ret_t slider_circle_paint_arc(widget_t* widget,
     }
     
     if (img) {
-        rect_t src = rect_init(0, 0, img->h, img->w);
+        rect_t src = rect_init(0, 0, img->w, img->h);
         canvas_draw_image(c, img, &src, &src);
     }
     
@@ -152,7 +153,7 @@ static ret_t slider_circle_on_paint_self(widget_t* widget, canvas_t* c) {
         
         slider_circle->cx = cx + c->ox;
         slider_circle->cy = cy + c->oy;
-        slider_circle->rad = tk_min(cx, cy) - slider_circle->line_width / 2;
+        slider_circle->rad = tk_min(cx, cy);
     }
 
     if (vg != NULL) {
@@ -333,12 +334,13 @@ static ret_t slider_circle_set_prop(widget_t* widget, const char* name, const va
     return RET_NOT_FOUND;
 }
 
-static float_t calculate_real_angle(widget_t* widget, point_t p, float_t angle)
+static float_t calculate_angle_percent(widget_t* widget, point_t p, float_t angle)
 {
     slider_circle_t* slider_circle = SLIDER_CIRCLE(widget);
     int cx = slider_circle->cx;
     int cy = slider_circle->cy;
     bool_t not_in_range = FALSE;
+    uint16_t real_start_angle, real_end_angle;
     
     if (p.x >= cx && p.y < cy) {
         angle = angle + 270;
@@ -350,14 +352,29 @@ static float_t calculate_real_angle(widget_t* widget, point_t p, float_t angle)
         angle = 270 - angle;
     }
 
-    not_in_range  = angle < slider_circle->start_angle ||
-        angle > slider_circle->end_angle;
+    real_start_angle = slider_circle->start_angle % 360;
+    real_end_angle = slider_circle->end_angle % 360;
 
-    if (not_in_range && slider_circle->end_angle > 360) {
-        angle += 360;
+    if (real_end_angle >= real_start_angle) {
+        not_in_range  = angle < slider_circle->start_angle ||
+            angle > slider_circle->end_angle;
+    } else {
+        not_in_range = angle > slider_circle->end_angle ||
+            angle < slider_circle->start_angle;
     }
 
-    return angle;
+    if (not_in_range) {
+        if (abs(angle - real_start_angle) <= abs(angle - real_end_angle)) {
+            angle = slider_circle->start_angle;
+        } else {
+            angle = slider_circle->end_angle;
+        }
+    } else if (slider_circle->end_angle > 360) {
+        angle = (angle - slider_circle->start_angle) > 0 ? angle:360 + angle;
+    }
+
+    angle -= slider_circle->start_angle;
+    return angle / (slider_circle->end_angle - slider_circle->start_angle);
 }
 
 ret_t slider_circle_set_value_internal(widget_t* widget, uint16_t value, event_type_t etype,
@@ -430,7 +447,7 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
         pointer_event_t* evt = (pointer_event_t*)e;
         point_t p = {evt->x, evt->y};
         uint16_t value = 0;
-        float_t angle;
+        float_t angle, angle_percent;
         float_t dist = sqrtf(powf(p.x - slider_circle->cx, 2) + powf(p.y -
             slider_circle->cy, 2));
 
@@ -441,32 +458,15 @@ static ret_t slider_circle_on_event(widget_t* widget, event_t* e) {
 
         angle = fabsf(asinf((float)(p.x - slider_circle->cx) / dist));
 
-        angle = calculate_real_angle(widget, p, TK_R2D(angle));
+        angle_percent = calculate_angle_percent(widget, p, TK_R2D(angle));
+        angle_percent = slider_circle->counter_clock_wise ? 1 - angle_percent:angle_percent;
         
         if (slider_circle->dragging) {
-            float fvalue = 0;
-            uint16_t range = slider_circle->max - slider_circle->min;
+            uint16_t value_range = slider_circle->max - slider_circle->min;
 
-            if (slider_circle->counter_clock_wise) {
-                angle = slider_circle->end_angle - angle;
-            } else {
-                angle = angle - slider_circle->start_angle;
-            }
-            
-            int16_t angle_range = slider_circle->end_angle -
-                slider_circle->start_angle;
+            value = angle_percent * (value_range) + slider_circle->min;
 
-            fvalue = angle / (angle_range ? angle_range : 1);
-            
-            if (fvalue > 1) {
-                fvalue = 1;
-            } else if (fvalue < 0) {
-                fvalue = 0;
-            }
-            
-            value = fvalue * (slider_circle->max - slider_circle->min) + slider_circle->min;
-            
-            if (abs(value - slider_circle->value) * 2 > range) {
+            if (abs(value - slider_circle->value) * 2 > value_range) {
                 ret = RET_STOP;
                 break;
             }
