@@ -354,10 +354,10 @@ static float_t calculate_angle_percent(widget_t* widget, point_t p, float_t angl
         not_in_range  = angle < slider_circle->start_angle ||
             angle > slider_circle->end_angle;
     } else {
-        not_in_range = angle > slider_circle->end_angle ||
-            angle < slider_circle->start_angle;
+        not_in_range = angle > real_end_angle &&
+            angle < real_start_angle;
     }
-
+    
     if (not_in_range) {
         if (abs(angle - real_start_angle) <= abs(angle - real_end_angle)) {
             angle = slider_circle->start_angle;
